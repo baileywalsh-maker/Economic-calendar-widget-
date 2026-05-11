@@ -1,0 +1,222 @@
+
+<style>
+  .ms-wrap { padding: 1rem 0; font-family: var(--font-sans); }
+  .ms-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .ms-title { font-size: 16px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
+  .ms-live { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-secondary); }
+  .gdot { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; display: inline-block; animation: gp 1.4s ease-in-out infinite; }
+  @keyframes gp { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .ms-clocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .clock-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 14px; position: relative; overflow: hidden; }
+  .clock-card.open { border-color: #1D9E75; }
+  .clock-card.open::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #1D9E75; border-radius: 0; }
+  .clock-card.closed { opacity: .65; }
+  .cc-city { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+  .cc-session { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px; }
+  .cc-time { font-size: 21px; font-weight: 500; color: var(--color-text-primary); font-variant-numeric: tabular-nums; letter-spacing: -.5px; margin-bottom: 4px; }
+  .cc-hours { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 4px; }
+  .sp-open { background: #EAF3DE; color: #3B6D11; }
+  .sp-closed { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .sp-soon { background: #faeeda; color: #854F0B; }
+  @media (prefers-color-scheme: dark) {
+    .sp-open { background: #173404; color: #C0DD97; }
+    .sp-soon { background: #412402; color: #FAC775; }
+    .clock-card.open::before { background: #5DCAA5; }
+  }
+  .cc-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+  .tl-section { margin: 1.25rem 0 0.5rem; }
+  .tl-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .tl-rows { display: flex; flex-direction: column; gap: 6px; }
+  .tl-row { display: flex; align-items: center; gap: 10px; }
+  .tl-name { font-size: 11px; color: var(--color-text-secondary); width: 56px; text-align: right; flex-shrink: 0; }
+  .tl-bar-wrap { flex: 1; position: relative; height: 16px; background: var(--color-background-secondary); border-radius: 4px; overflow: hidden; border: 0.5px solid var(--color-border-tertiary); }
+  .tl-bar { position: absolute; top: 0; height: 100%; border-radius: 3px; opacity: .8; }
+  .tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #E24B4A; z-index: 2; }
+  .tl-hour-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-secondary); margin-top: 5px; }
+  .overlap-section { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 14px; margin-top: 1rem; }
+  .ov-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
+  .ov-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ov-chip { font-size: 12px; padding: 3px 9px; border-radius: 4px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); background: var(--color-background-primary); }
+  .ov-chip.active { background: #EAF3DE; border-color: #97C459; color: #3B6D11; font-weight: 500; }
+  @media (prefers-color-scheme: dark) { .ov-chip.active { background: #173404; border-color: #639922; color: #C0DD97; } }
+  .ms-footer { display: flex; justify-content: flex-end; font-size: 11px; color: var(--color-text-secondary); margin-top: 10px; gap: 14px; }
+  .dst-note { font-size: 11px; background: #faeeda; color: #854F0B; border: 0.5px solid #EF9F27; border-radius: 4px; padding: 2px 8px; }
+  @media (prefers-color-scheme: dark) { .dst-note { background: #412402; color: #FAC775; border-color: #BA7517; } }
+</style>
+
+<div class="ms-wrap">
+  <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Live forex market session hours in AEST with DST adjustments</h2>
+
+  <div class="ms-header">
+    <div class="ms-title">
+      <i class="ti ti-clock" style="font-size:18px" aria-hidden="true"></i>
+      Market sessions
+    </div>
+    <div class="ms-live"><span class="gdot"></span> Live · AEST (UTC+10)</div>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <span class="dst-note"><i class="ti ti-info-circle" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> DST-adjusted: AU on AEST, US on EDT (UTC−4), UK on BST (UTC+1)</span>
+  </div>
+
+  <div class="ms-clocks" id="clocks"></div>
+
+  <div class="tl-section">
+    <div class="tl-label">24h session map (AEST)</div>
+    <div class="tl-rows" id="tl-rows"></div>
+    <div class="tl-hour-labels">
+      <span>00:00</span><span>03:00</span><span>06:00</span><span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span><span>00:00</span>
+    </div>
+  </div>
+
+  <div class="overlap-section">
+    <div class="ov-title"><i class="ti ti-bolt" style="font-size:14px" aria-hidden="true"></i> High-volatility overlaps (AEST)</div>
+    <div class="ov-chips" id="ov-chips"></div>
+  </div>
+
+  <div class="ms-footer">
+    <span>AEST: <strong id="aest-now" style="font-variant-numeric:tabular-nums">–</strong></span>
+    <span>UTC: <span id="utc-now" style="font-variant-numeric:tabular-nums">–</span></span>
+  </div>
+</div>
+
+<script>
+const AEST_OFFSET_H = 10;
+
+function nowAEST() {
+  const utcMs = Date.now() + new Date().getTimezoneOffset() * 60000;
+  return new Date(utcMs + AEST_OFFSET_H * 3600000);
+}
+
+function getAESTDecimalH() {
+  const a = nowAEST();
+  return a.getHours() + a.getMinutes() / 60 + a.getSeconds() / 3600;
+}
+
+function fmtHHMMSS(dt) {
+  return [dt.getHours(),dt.getMinutes(),dt.getSeconds()].map(n=>n.toString().padStart(2,'0')).join(':');
+}
+
+function getLocalTime(tz) {
+  try { return new Date().toLocaleTimeString('en-AU', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
+  catch(e) { return '--:--:--'; }
+}
+
+function fmtCountdown(mins) {
+  const h = Math.floor(mins / 60), m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+const SESSIONS = [
+  {
+    id: 'sydney', name: 'Sydney', session: 'Pacific', tz: 'Australia/Sydney',
+    aestOpen: 7, aestClose: 16, color: '#378ADD',
+    note: 'AEST (no DST)'
+  },
+  {
+    id: 'tokyo', name: 'Tokyo', session: 'Asian', tz: 'Asia/Tokyo',
+    aestOpen: 9, aestClose: 18, color: '#E24B4A',
+    note: 'JST (no DST)'
+  },
+  {
+    id: 'london', name: 'London', session: 'European', tz: 'Europe/London',
+    aestOpen: 17, aestClose: 2, color: '#EF9F27',
+    note: 'BST (UTC+1)'
+  },
+  {
+    id: 'new_york', name: 'New York', session: 'American', tz: 'America/New_York',
+    aestOpen: 23, aestClose: 8, color: '#1D9E75',
+    note: 'EDT (UTC−4)'
+  },
+];
+
+const OVERLAPS = [
+  { name: 'Sydney / Tokyo', aestStart: 9, aestEnd: 16 },
+  { name: 'London / New York', aestStart: 23, aestEnd: 2 },
+];
+
+function isOpen(s, aestH) {
+  if (s.aestOpen < s.aestClose) return aestH >= s.aestOpen && aestH < s.aestClose;
+  return aestH >= s.aestOpen || aestH < s.aestClose;
+}
+
+function minsUntil(targetH, aestH) {
+  let diff = targetH - aestH;
+  if (diff < 0) diff += 24;
+  return diff * 60;
+}
+
+function isOverlapActive(o, aestH) {
+  if (o.aestStart < o.aestEnd) return aestH >= o.aestStart && aestH < o.aestEnd;
+  return aestH >= o.aestStart || aestH < o.aestEnd;
+}
+
+function barStyle(openH, closeH, color) {
+  if (openH < closeH) {
+    const l = (openH / 24) * 100;
+    const w = ((closeH - openH) / 24) * 100;
+    return `<div class="tl-bar" style="left:${l.toFixed(1)}%;width:${w.toFixed(1)}%;background:${color}"></div>`;
+  }
+  const w1 = ((24 - openH) / 24) * 100;
+  const w2 = (closeH / 24) * 100;
+  return `<div class="tl-bar" style="left:${((openH/24)*100).toFixed(1)}%;width:${w1.toFixed(1)}%;background:${color}"></div>
+          <div class="tl-bar" style="left:0%;width:${w2.toFixed(1)}%;background:${color}"></div>`;
+}
+
+function hoursLabel(s) {
+  const oh = s.aestOpen.toString().padStart(2,'0');
+  const ch = s.aestClose.toString().padStart(2,'0');
+  return `${oh}:00 – ${ch}:00 AEST`;
+}
+
+function update() {
+  const aest = nowAEST();
+  const aestH = getAESTDecimalH();
+  const nowPct = (aestH / 24) * 100;
+
+  document.getElementById('aest-now').textContent = fmtHHMMSS(aest);
+  document.getElementById('utc-now').textContent = new Date().toUTCString().split(' ')[4];
+
+  document.getElementById('clocks').innerHTML = SESSIONS.map(s => {
+    const open = isOpen(s, aestH);
+    const localT = getLocalTime(s.tz);
+    let statusHtml, subHtml = '';
+    if (open) {
+      const closeIn = fmtCountdown(minsUntil(s.aestClose, aestH));
+      statusHtml = `<span class="status-pill sp-open">● Open</span>`;
+      subHtml = `<div class="cc-sub">Closes in ${closeIn}</div>`;
+    } else {
+      const openIn = minsUntil(s.aestOpen, aestH);
+      statusHtml = openIn <= 1800 ? `<span class="status-pill sp-soon">Opening soon</span>` : `<span class="status-pill sp-closed">Closed</span>`;
+      subHtml = `<div class="cc-sub">Opens in ${fmtCountdown(openIn)}</div>`;
+    }
+    return `<div class="clock-card ${open ? 'open' : 'closed'}">
+      <div class="cc-city">${s.name}</div>
+      <div class="cc-session">${s.session} · <span style="font-size:10px">${s.note}</span></div>
+      <div class="cc-time">${localT}</div>
+      <div class="cc-hours">${hoursLabel(s)}</div>
+      ${statusHtml}${subHtml}
+    </div>`;
+  }).join('');
+
+  document.getElementById('tl-rows').innerHTML = SESSIONS.map(s => {
+    return `<div class="tl-row">
+      <div class="tl-name">${s.name}</div>
+      <div class="tl-bar-wrap" role="img" aria-label="${s.name} session bar">
+        ${barStyle(s.aestOpen, s.aestClose, s.color)}
+        <div class="tl-now" style="left:${nowPct.toFixed(2)}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ov-chips').innerHTML = OVERLAPS.map(o => {
+    const active = isOverlapActive(o, aestH);
+    const ts = `${o.aestStart.toString().padStart(2,'0')}:00 – ${o.aestEnd.toString().padStart(2,'0')}:00 AEST`;
+    return `<span class="ov-chip ${active ? 'active' : ''}">${active ? '● ' : ''}${o.name} · ${ts}</span>`;
+  }).join('');
+}
+
+update();
+setInterval(update, 1000);
+</script>
