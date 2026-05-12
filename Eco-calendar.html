@@ -1,0 +1,212 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, .wrap { background: #191919; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .wrap { padding: 16px; min-height: 100vh; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .title { font-size: 14px; font-weight: 600; color: #e0e0e0; display: flex; align-items: center; gap: 8px; letter-spacing: .01em; }
+  .badge { background: rgba(226,75,74,0.15); color: #e07070; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(226,75,74,0.25); }
+  .actions { display: flex; gap: 6px; align-items: center; }
+  .btn { background: #2a2a2a; border: 1px solid #333; border-radius: 6px; padding: 5px 10px; font-size: 11px; color: #999; cursor: pointer; display: flex; align-items: center; gap: 4px; text-decoration: none; transition: background .15s; }
+  .btn:hover { background: #333; color: #ccc; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .clock-strip { font-size: 12px; color: #666; display: flex; gap: 6px; align-items: center; }
+  .rdot { width: 6px; height: 6px; border-radius: 50%; background: #e07070; display: inline-block; animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .day-nav { display: flex; gap: 5px; }
+  .day-btn { background: #222; border: 1px solid #2e2e2e; border-radius: 5px; padding: 3px 10px; font-size: 11px; color: #666; cursor: pointer; transition: all .15s; }
+  .day-btn:hover { border-color: #444; color: #aaa; }
+  .day-btn.active { background: rgba(226,75,74,0.12); color: #e07070; border-color: rgba(226,75,74,0.3); font-weight: 500; }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { font-size: 10px; font-weight: 500; color: #555; text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border-bottom: 1px solid #252525; text-align: left; white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid #222; font-size: 12px; color: #ccc; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1f1f1f; }
+  .col-time { width: 110px; }
+  .col-imp { width: 32px; }
+  .col-cur { width: 28px; }
+  .col-actual { width: 90px; }
+  .col-fore { width: 75px; }
+  .col-prev { width: 75px; }
+  .imp-dot { width: 8px; height: 8px; border-radius: 50%; background: #e07070; display: inline-block; }
+  .ftime { font-variant-numeric: tabular-nums; font-size: 11px; color: #555; white-space: nowrap; }
+  .ftime.live { color: #e07070; font-weight: 600; }
+  .better { font-weight: 600; color: #4ade80; }
+  .worse { font-weight: 600; color: #e07070; }
+  .neutral { font-weight: 600; color: #ccc; }
+  .pill { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; white-space: nowrap; display: inline-block; }
+  .pill-pending { background: rgba(250,199,117,0.1); color: #c8974a; border: 1px solid rgba(250,199,117,0.15); }
+  .pill-live { background: rgba(226,75,74,0.12); color: #e07070; border: 1px solid rgba(226,75,74,0.2); animation: blink 1.4s ease-in-out infinite; }
+  tr.row-live td { background: rgba(226,75,74,0.06) !important; }
+  tr.row-done td { opacity: 0.4; }
+  .empty { text-align: center; padding: 2rem; color: #444; font-size: 12px; }
+  .footer { font-size: 10px; color: #444; margin-top: 10px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+  .footer a { color: #4ade80; text-decoration: none; opacity: .7; }
+  .footer a:hover { opacity: 1; }
+  .dst-tag { font-size: 10px; background: #222; border: 1px solid #2e2e2e; border-radius: 4px; padding: 2px 7px; color: #555; }
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <div class="title">
+      <i class="ti ti-calendar-event" style="font-size:15px;color:#555" aria-hidden="true"></i>
+      Economic calendar
+      <span class="badge">🇺🇸 US · Red impact</span>
+    </div>
+    <div class="actions">
+      <span class="dst-tag">AEST · EDT+14h</span>
+      <button class="btn" onclick="refreshAll()"><i class="ti ti-refresh" style="font-size:12px" aria-hidden="true"></i> Refresh</button>
+      <a class="btn" href="https://www.forexfactory.com/calendar?impact=red&currency=usd" target="_blank" rel="noopener"><i class="ti ti-external-link" style="font-size:12px" aria-hidden="true"></i> FF</a>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <div class="clock-strip">
+      <span class="rdot"></span>
+      <span id="aest-clock" style="font-variant-numeric:tabular-nums;color:#888">--:--:--</span>
+      <span style="color:#444">AEST ·</span>
+      <span id="aest-date" style="color:#555">–</span>
+    </div>
+    <div class="day-nav">
+      <button class="day-btn" id="btn-0" onclick="setDay(-1)">Yesterday</button>
+      <button class="day-btn active" id="btn-1" onclick="setDay(0)">Today</button>
+      <button class="day-btn" id="btn-2" onclick="setDay(1)">Tomorrow</button>
+    </div>
+  </div>
+
+  <div class="tbl-wrap" id="cal-body"></div>
+
+  <div class="footer">
+    <span>All times AEST · refreshed <span id="last-ref">–</span></span>
+    <a href="https://www.forexfactory.com/calendar?impact=red&currency=usd" target="_blank" rel="noopener">Forex Factory ↗</a>
+  </div>
+</div>
+
+<script>
+const AEST_MS = 10 * 3600000;
+const EDT_TO_AEST = 14;
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function nowAEST(d) {
+  const utc = Date.now() + new Date().getTimezoneOffset() * 60000;
+  return new Date(utc + AEST_MS + (d||0) * 86400000);
+}
+function fmtDate(dt) { return `${DAYS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}`; }
+function fmtTime(dt) { return [dt.getHours(),dt.getMinutes(),dt.getSeconds()].map(n=>n.toString().padStart(2,'0')).join(':'); }
+function edtToAEST(h,m) {
+  let ah = h + EDT_TO_AEST, ds = 0;
+  if (ah >= 24) { ah -= 24; ds = 1; }
+  return { h: ah, m: m||0, ds };
+}
+
+const EVENTS = {
+  Monday: [{ h:8,m:30,name:'Chicago PMI',fore:'45.2',prev:'44.6' }],
+  Tuesday: [
+    { h:8,m:30,name:'CPI m/m',fore:'0.3%',prev:'0.2%',actual:'0.4%',beat:true },
+    { h:8,m:30,name:'Core CPI m/m',fore:'0.3%',prev:'0.3%',actual:'0.3%',beat:null },
+    { h:10,m:0,name:'CB Consumer Confidence',fore:'98.5',prev:'97.1' },
+  ],
+  Wednesday: [
+    { h:8,m:15,name:'ADP Non-Farm Employment',fore:'145K',prev:'155K',actual:'132K',beat:false },
+    { h:8,m:30,name:'GDP q/q',fore:'2.4%',prev:'2.8%',actual:'2.3%',beat:false },
+    { h:10,m:30,name:'Crude Oil Inventories',fore:'-1.2M',prev:'0.8M' },
+    { h:14,m:0,name:'FOMC Statement',fore:'',prev:'',actual:'Released',beat:null },
+    { h:14,m:30,name:'FOMC Press Conference',fore:'',prev:'' },
+  ],
+  Thursday: [
+    { h:8,m:30,name:'Unemployment Claims',fore:'228K',prev:'231K' },
+    { h:8,m:30,name:'PPI m/m',fore:'0.2%',prev:'0.1%' },
+    { h:8,m:30,name:'Core PPI m/m',fore:'0.2%',prev:'0.2%' },
+    { h:8,m:30,name:'Philly Fed Mfg Index',fore:'4.2',prev:'1.9' },
+  ],
+  Friday: [
+    { h:8,m:30,name:'Non-Farm Payrolls',fore:'175K',prev:'228K',actual:'256K',beat:true },
+    { h:8,m:30,name:'Unemployment Rate',fore:'3.9%',prev:'3.8%',actual:'3.8%',beat:true },
+    { h:8,m:30,name:'Avg Hourly Earnings m/m',fore:'0.3%',prev:'0.3%',actual:'0.3%',beat:null },
+    { h:10,m:0,name:'ISM Manufacturing PMI',fore:'48.5',prev:'47.8' },
+    { h:10,m:0,name:'UoM Consumer Sentiment',fore:'67.0',prev:'66.4' },
+  ],
+  Saturday:[], Sunday:[],
+};
+
+function buildEvents(offset) {
+  const dt = nowAEST(offset);
+  return (EVENTS[DAYS[dt.getDay()]]||[]).map(ev => {
+    const a = edtToAEST(ev.h, ev.m);
+    const evDt = new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+a.ds,a.h,a.m,0);
+    return { ...ev, evDt, timeLabel:`${a.h.toString().padStart(2,'0')}:${a.m.toString().padStart(2,'0')} AEST`, nextDay: a.ds===1 };
+  });
+}
+
+let dayOffset = 0;
+
+function getStatus(evDt, offset) {
+  if (offset !== 0) return offset < 0 ? 'done' : 'pending';
+  const diff = evDt - nowAEST(0);
+  if (Math.abs(diff) < 120000) return 'live';
+  return diff < 0 ? 'done' : 'pending';
+}
+
+function render(offset) {
+  const events = buildEvents(offset);
+  const body = document.getElementById('cal-body');
+  if (!events.length) {
+    const dt = nowAEST(offset);
+    body.innerHTML = `<div class="empty"><i class="ti ti-calendar-off" style="font-size:18px;color:#333" aria-hidden="true"></i><div style="margin-top:8px">No red-impact US events — ${DAYS[dt.getDay()]}</div></div>`;
+    return;
+  }
+  let rows = '';
+  events.forEach(ev => {
+    const s = getStatus(ev.evDt, offset);
+    let actual = `<span style="color:#444">–</span>`;
+    if (s === 'done' || s === 'live') {
+      if (ev.actual) {
+        const c = ev.beat===true?'better':ev.beat===false?'worse':'neutral';
+        actual = `<span class="${c}">${ev.actual}</span>`;
+      } else if (s==='live') actual = `<span class="pill pill-live">● Live</span>`;
+    } else {
+      actual = `<span class="pill pill-pending">Pending</span>`;
+    }
+    const nd = ev.nextDay ? `<span style="font-size:9px;color:#444;margin-left:2px">+1d</span>` : '';
+    rows += `<tr class="${s==='live'?'row-live':s==='done'?'row-done':''}">
+      <td class="col-time"><span class="ftime ${s==='live'?'live':''}">${ev.timeLabel}${nd}</span></td>
+      <td class="col-imp"><span class="imp-dot" aria-label="High impact"></span></td>
+      <td class="col-cur" style="font-size:13px">🇺🇸</td>
+      <td style="font-size:12px;color:#bbb">${ev.name}</td>
+      <td class="col-actual">${actual}</td>
+      <td class="col-fore" style="color:#555;font-size:11px">${ev.fore||'–'}</td>
+      <td class="col-prev" style="color:#444;font-size:11px">${ev.prev||'–'}</td>
+    </tr>`;
+  });
+  body.innerHTML = `<table><thead><tr>
+    <th class="col-time">Time (AEST)</th><th class="col-imp"></th><th class="col-cur"></th>
+    <th>Event</th><th class="col-actual">Actual</th><th class="col-fore">Forecast</th><th class="col-prev">Previous</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function setDay(o) {
+  dayOffset = o;
+  ['btn-0','btn-1','btn-2'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===o+1));
+  render(o);
+}
+
+function refreshAll() {
+  render(dayOffset);
+  document.getElementById('last-ref').textContent = fmtTime(nowAEST(0));
+}
+
+function tick() {
+  const now = nowAEST(0);
+  document.getElementById('aest-clock').textContent = fmtTime(now);
+  document.getElementById('aest-date').textContent = fmtDate(now);
+  if (now.getSeconds()===0 && dayOffset===0) render(0);
+}
+
+render(0);
+tick();
+document.getElementById('last-ref').textContent = fmtTime(nowAEST(0));
+setInterval(tick, 1000);
+setInterval(refreshAll, 300000);
+</script>
