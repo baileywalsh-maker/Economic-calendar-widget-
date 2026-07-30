@@ -1,0 +1,276 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, .wrap { background: #191919; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .wrap { padding: 16px; min-height: 100vh; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .title { font-size: 14px; font-weight: 600; color: #e0e0e0; display: flex; align-items: center; gap: 8px; }
+  .live-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+  .gdot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block; animation: gp 1.4s ease-in-out infinite; }
+  @keyframes gp { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .dst-note { font-size: 10px; background: rgba(250,199,117,0.08); border: 1px solid rgba(250,199,117,0.15); border-radius: 4px; padding: 2px 8px; color: #c8974a; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 5px; }
+  .clocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .card { background: #212121; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; position: relative; overflow: hidden; }
+  .card.open { border-color: rgba(74,222,128,0.3); }
+  .card.open::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:#4ade80; }
+  .card.closed { opacity: .5; }
+  .cc-city { font-size: 10px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+  .cc-session { font-size: 10px; color: #444; margin-bottom: 6px; }
+  .cc-time { font-size: 20px; font-weight: 600; color: #e0e0e0; font-variant-numeric: tabular-nums; letter-spacing: -.5px; margin-bottom: 3px; }
+  .cc-hours { font-size: 10px; color: #444; margin-bottom: 5px; }
+  .sp { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px; }
+  .sp-open { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+  .sp-closed { background: #222; color: #555; border: 1px solid #2a2a2a; }
+  .sp-soon { background: rgba(250,199,117,0.1); color: #c8974a; border: 1px solid rgba(250,199,117,0.15); }
+  .cc-sub { font-size: 10px; color: #444; margin-top: 4px; }
+  .tl-label { font-size: 10px; font-weight: 500; color: #444; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .tl-rows { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
+  .tl-row { display: flex; align-items: center; gap: 10px; }
+  .tl-name { font-size: 10px; color: #444; width: 54px; text-align: right; flex-shrink: 0; }
+  .tl-wrap { flex: 1; position: relative; height: 14px; background: #222; border-radius: 3px; overflow: hidden; border: 1px solid #2a2a2a; }
+  .tl-bar { position: absolute; top: 0; height: 100%; border-radius: 2px; opacity: .75; }
+  .tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #e07070; z-index: 2; }
+  .tl-hours { display: flex; justify-content: space-between; font-size: 9px; color: #383838; margin-top: 4px; }
+  .ov-section { background: #1e1e1e; border: 1px solid #272727; border-radius: 6px; padding: 10px 12px; margin-top: 12px; }
+  .ov-title { font-size: 10px; font-weight: 500; color: #444; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: .06em; }
+  .ov-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ov-chip { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #2a2a2a; color: #555; background: #222; }
+  .ov-chip.active { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.25); color: #4ade80; font-weight: 500; }
+  .ms-footer { display: flex; justify-content: flex-end; font-size: 10px; color: #383838; margin-top: 10px; gap: 14px; font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="wrap">
+  <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Live forex market sessions in London time</h2>
+
+  <div class="header">
+    <div class="title">
+      <i class="ti ti-clock" style="font-size:15px;color:#555" aria-hidden="true"></i>
+      Market sessions
+    </div>
+    <div class="live-row"><span class="gdot"></span> Live · <span id="tz-live-label">BST</span></div>
+  </div>
+
+  <div class="dst-note" id="dst-note">
+    <i class="ti ti-info-circle" style="font-size:11px" aria-hidden="true"></i>
+    <span id="dst-text">DST active: UK on BST (UTC+1) · US on EDT (UTC−4)</span>
+  </div>
+
+  <div class="clocks" id="clocks"></div>
+
+  <div class="tl-label" id="tl-label">24h session map (BST)</div>
+  <div class="tl-rows" id="tl-rows"></div>
+  <div class="tl-hours">
+    <span>00:00</span><span>03:00</span><span>06:00</span><span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span><span>00:00</span>
+  </div>
+
+  <div class="ov-section">
+    <div class="ov-title"><i class="ti ti-bolt" style="font-size:11px" aria-hidden="true"></i> High-volatility overlaps</div>
+    <div class="ov-chips" id="ov-chips"></div>
+  </div>
+
+  <div class="ms-footer">
+    <span id="london-footer-label">BST</span> <strong id="london-now">–</strong>
+    <span>UTC <span id="utc-now">–</span></span>
+  </div>
+</div>
+
+<script>
+// Get current London time using Intl API — auto DST
+function nowLondon() {
+  const now = new Date();
+  const parts = now.toLocaleString('en-GB', {
+    timeZone: 'Europe/London', hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  const [datePart, timePart] = parts.split(', ');
+  const [dd, mm, yyyy] = datePart.split('/').map(Number);
+  const [hh, min, ss] = timePart.split(':').map(Number);
+  return new Date(yyyy, mm - 1, dd, hh, min, ss);
+}
+
+function getLondonOffset() {
+  // 0 = GMT, 1 = BST
+  const now = new Date();
+  const londonH = parseInt(now.toLocaleString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hour12: false }));
+  return ((londonH - now.getUTCHours()) + 24) % 24;
+}
+
+function getTzLabel() { return getLondonOffset() === 1 ? 'BST' : 'GMT'; }
+
+function getLondonH() {
+  const t = nowLondon();
+  return t.getHours() + t.getMinutes() / 60 + t.getSeconds() / 3600;
+}
+
+function fmtHMS(dt) {
+  return [dt.getHours(), dt.getMinutes(), dt.getSeconds()].map(n => n.toString().padStart(2, '0')).join(':');
+}
+
+function getLocalTime(tz) {
+  try { return new Date().toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }
+  catch(e) { return '--:--:--'; }
+}
+
+function fmtCD(mins) {
+  const h = Math.floor(mins / 60), m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Session open/close times expressed in London time (BST)
+// Sydney: 23:00–08:00 BST | Tokyo: 01:00–10:00 BST | London: 08:00–17:00 BST | NY: 13:00–22:00 BST
+// In GMT (winter): Sydney 23:00–08:00 | Tokyo 00:00–09:00 | London 08:00–17:00 | NY 14:00–23:00
+// We use Intl to get actual local times per city so the cards are always correct — 
+// but for timeline bars we need London-relative hours, which shift by DST.
+// Simplest: derive open/close in London time dynamically from UTC offsets.
+
+function getSessionLondonHours(utcOpen, utcClose) {
+  const lo = getLondonOffset();
+  let open = (utcOpen + lo + 24) % 24;
+  let close = (utcClose + lo + 24) % 24;
+  return { open, close };
+}
+
+// UTC open/close for each session (standard, no DST — DST handled per city via Intl)
+// Sydney: UTC 22:00–07:00 (AEST = UTC+10, but we track exchange hours in UTC)
+// Tokyo:  UTC 00:00–09:00
+// London: UTC 07:00–16:00 (BST offsets this to 08:00–17:00 local)
+// NY:     UTC 13:30–20:00 (EDT offsets)
+// For simplicity and DST-accuracy, we define sessions by their LOCAL open/close
+// and compute London-time equivalents via timezone offsets.
+
+const SESSION_DEFS = [
+  { name: 'Sydney',   session: 'Pacific',  tz: 'Australia/Sydney',  color: '#378ADD', note: 'AEST/AEDT' },
+  { name: 'Tokyo',    session: 'Asian',    tz: 'Asia/Tokyo',         color: '#e07070', note: 'JST' },
+  { name: 'London',   session: 'European', tz: 'Europe/London',      color: '#c8974a', note: '' },
+  { name: 'New York', session: 'American', tz: 'America/New_York',   color: '#4ade80', note: 'EDT/EST' },
+];
+
+// Exchange open/close in each city's local time
+const SESSION_LOCAL_HOURS = {
+  Sydney:    { open: 10, close: 19 }, // ASX/forex: 10:00–19:00 AEST
+  Tokyo:     { open: 9,  close: 18 }, // TSE: 09:00–18:00 JST
+  London:    { open: 8,  close: 17 }, // LSE: 08:00–17:00 local
+  'New York':{ open: 9,  close: 17 }, // NYSE: 09:30 but forex 09:00 EDT
+};
+
+function getCityOffset(tz) {
+  const now = new Date();
+  const h = parseInt(now.toLocaleString('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }));
+  return ((h - now.getUTCHours()) + 24) % 24;
+}
+
+function sessionInLondonTime(name) {
+  const local = SESSION_LOCAL_HOURS[name];
+  const cityTz = SESSION_DEFS.find(s => s.name === name).tz;
+  const cityOffset = getCityOffset(cityTz);
+  const londonOffset = getLondonOffset();
+  // Convert city local → UTC → London
+  const utcOpen = (local.open - cityOffset + 24) % 24;
+  const utcClose = (local.close - cityOffset + 24) % 24;
+  const londonOpen = (utcOpen + londonOffset + 24) % 24;
+  const londonClose = (utcClose + londonOffset + 24) % 24;
+  return { open: londonOpen, close: londonClose };
+}
+
+const OVERLAPS = [
+  { name: 'Tokyo / London',    sessions: ['Tokyo', 'London'] },
+  { name: 'London / New York', sessions: ['London', 'New York'] },
+];
+
+function isOpen(open, close, h) {
+  if (open < close) return h >= open && h < close;
+  return h >= open || h < close;
+}
+
+function minsUntil(target, h) {
+  let d = target - h; if (d < 0) d += 24; return d * 60;
+}
+
+function isOverlapActive(o, h) {
+  const s1 = sessionInLondonTime(o.sessions[0]);
+  const s2 = sessionInLondonTime(o.sessions[1]);
+  return isOpen(s1.open, s1.close, h) && isOpen(s2.open, s2.close, h);
+}
+
+function bars(open, close, color) {
+  if (open < close) {
+    const l = (open / 24) * 100, w = ((close - open) / 24) * 100;
+    return `<div class="tl-bar" style="left:${l.toFixed(1)}%;width:${w.toFixed(1)}%;background:${color}"></div>`;
+  }
+  const w1 = ((24 - open) / 24) * 100, w2 = (close / 24) * 100;
+  return `<div class="tl-bar" style="left:${((open / 24) * 100).toFixed(1)}%;width:${w1.toFixed(1)}%;background:${color}"></div>
+          <div class="tl-bar" style="left:0%;width:${w2.toFixed(1)}%;background:${color}"></div>`;
+}
+
+function update() {
+  const tz = getTzLabel();
+  const londonNow = nowLondon();
+  const h = getLondonH();
+  const pct = (h / 24) * 100;
+
+  // Update labels
+  document.getElementById('tz-live-label').textContent = tz;
+  document.getElementById('tl-label').textContent = `24h session map (${tz})`;
+  document.getElementById('london-footer-label').textContent = tz;
+  document.getElementById('dst-text').textContent =
+    getLondonOffset() === 1
+      ? `DST active: UK on BST (UTC+1) · US on EDT (UTC−4)`
+      : `UK on GMT (UTC+0) · US on EST (UTC−5)`;
+
+  document.getElementById('london-now').textContent = fmtHMS(londonNow);
+  document.getElementById('utc-now').textContent = new Date().toUTCString().split(' ')[4];
+
+  // Clock cards
+  document.getElementById('clocks').innerHTML = SESSION_DEFS.map(s => {
+    const lh = sessionInLondonTime(s.name);
+    const open = isOpen(lh.open, lh.close, h);
+    const lt = getLocalTime(s.tz);
+    const noteLabel = s.name === 'London' ? tz : s.note;
+    let pill, sub = '';
+    if (open) {
+      pill = `<span class="sp sp-open">● Open</span>`;
+      sub = `<div class="cc-sub">Closes in ${fmtCD(minsUntil(lh.close, h))}</div>`;
+    } else {
+      const oi = minsUntil(lh.open, h);
+      pill = oi <= 1800 ? `<span class="sp sp-soon">Soon</span>` : `<span class="sp sp-closed">Closed</span>`;
+      sub = `<div class="cc-sub">Opens in ${fmtCD(oi)}</div>`;
+    }
+    const oh = lh.open.toString().padStart(2, '0');
+    const ch = lh.close.toString().padStart(2, '0');
+    return `<div class="card ${open ? 'open' : 'closed'}">
+      <div class="cc-city">${s.name}</div>
+      <div class="cc-session">${s.session}${noteLabel ? ' · ' + noteLabel : ''}</div>
+      <div class="cc-time">${lt}</div>
+      <div class="cc-hours">${oh}:00 – ${ch}:00 ${tz}</div>
+      ${pill}${sub}
+    </div>`;
+  }).join('');
+
+  // Timeline bars
+  document.getElementById('tl-rows').innerHTML = SESSION_DEFS.map(s => {
+    const lh = sessionInLondonTime(s.name);
+    return `<div class="tl-row">
+      <div class="tl-name">${s.name}</div>
+      <div class="tl-wrap" role="img" aria-label="${s.name} session">
+        ${bars(lh.open, lh.close, s.color)}
+        <div class="tl-now" style="left:${pct.toFixed(2)}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Overlap chips
+  document.getElementById('ov-chips').innerHTML = OVERLAPS.map(o => {
+    const active = isOverlapActive(o, h);
+    const s1 = sessionInLondonTime(o.sessions[0]);
+    const s2 = sessionInLondonTime(o.sessions[1]);
+    // Overlap window = later open to earlier close
+    const overlapStart = Math.max(s1.open, s2.open);
+    const overlapEnd = Math.min(s1.close, s2.close);
+    const ts = `${overlapStart.toString().padStart(2,'0')}:00 – ${overlapEnd.toString().padStart(2,'0')}:00 ${tz}`;
+    return `<span class="ov-chip ${active ? 'active' : ''}">${active ? '● ' : ''}${o.name} · ${ts}</span>`;
+  }).join('');
+}
+
+update();
+setInterval(update, 1000);
+</script>
