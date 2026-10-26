@@ -1,0 +1,230 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, .wrap { background: #191919; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .wrap { padding: 16px; min-height: 100vh; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .title { font-size: 14px; font-weight: 600; color: #e0e0e0; display: flex; align-items: center; gap: 8px; }
+  .live-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+  .gdot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block; animation: gp 1.4s ease-in-out infinite; }
+  @keyframes gp { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .dst-note { font-size: 10px; background: rgba(250,199,117,0.08); border: 1px solid rgba(250,199,117,0.15); border-radius: 4px; padding: 2px 8px; color: #c8974a; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 5px; }
+  .clocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .card { background: #212121; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; position: relative; overflow: hidden; }
+  .card.open { border-color: rgba(74,222,128,0.3); }
+  .card.open::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:#4ade80; }
+  .card.closed { opacity: .5; }
+  .cc-city { font-size: 10px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+  .cc-session { font-size: 10px; color: #444; margin-bottom: 6px; }
+  .cc-time { font-size: 20px; font-weight: 600; color: #e0e0e0; font-variant-numeric: tabular-nums; letter-spacing: -.5px; margin-bottom: 3px; }
+  .cc-hours { font-size: 10px; color: #666; margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+  .sp { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px; }
+  .sp-open { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+  .sp-closed { background: #222; color: #555; border: 1px solid #2a2a2a; }
+  .sp-soon { background: rgba(250,199,117,0.1); color: #c8974a; border: 1px solid rgba(250,199,117,0.15); }
+  .cc-sub { font-size: 10px; color: #444; margin-top: 4px; }
+  .tl-label { font-size: 10px; font-weight: 500; color: #444; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .tl-rows { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
+  .tl-row { display: flex; align-items: center; gap: 10px; }
+  .tl-name { font-size: 10px; color: #444; width: 54px; text-align: right; flex-shrink: 0; }
+  .tl-wrap { flex: 1; position: relative; height: 14px; background: #222; border-radius: 3px; overflow: hidden; border: 1px solid #2a2a2a; }
+  .tl-bar { position: absolute; top: 0; height: 100%; border-radius: 2px; opacity: .75; }
+  .tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #e07070; z-index: 2; }
+  .tl-hours { display: flex; justify-content: space-between; font-size: 9px; color: #383838; margin-top: 4px; margin-left: 64px; }
+  .ov-section { background: #1e1e1e; border: 1px solid #272727; border-radius: 6px; padding: 10px 12px; margin-top: 12px; }
+  .ov-title { font-size: 10px; font-weight: 500; color: #444; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: .06em; }
+  .ov-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ov-chip { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #2a2a2a; color: #555; background: #222; }
+  .ov-chip.active { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.25); color: #4ade80; font-weight: 500; }
+  .ms-footer { display: flex; justify-content: flex-end; font-size: 10px; color: #383838; margin-top: 10px; gap: 14px; font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="wrap">
+  <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Live market sessions in UTC</h2>
+
+  <div class="header">
+    <div class="title">
+      <i class="ti ti-clock" style="font-size:15px;color:#555" aria-hidden="true"></i>
+      Market sessions
+    </div>
+    <div class="live-row"><span class="gdot"></span> Live · UTC</div>
+  </div>
+
+  <div class="dst-note">
+    <i class="ti ti-info-circle" style="font-size:11px" aria-hidden="true"></i>
+    <span id="dst-text">–</span>
+  </div>
+
+  <div class="clocks" id="clocks"></div>
+
+  <div class="tl-label">24h session map (UTC, today)</div>
+  <div class="tl-rows" id="tl-rows"></div>
+  <div class="tl-hours">
+    <span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
+  </div>
+
+  <div class="ov-section">
+    <div class="ov-title"><i class="ti ti-bolt" style="font-size:11px" aria-hidden="true"></i> High-volatility overlaps (UTC)</div>
+    <div class="ov-chips" id="ov-chips"></div>
+  </div>
+
+  <div class="ms-footer">
+    <span>UTC <strong id="utc-now">–</strong></span>
+  </div>
+</div>
+
+<script>
+/*
+  Everything is worked out from each exchange's OWN local hours and time zone,
+  then shown in UTC. Clock changes (UK, US, Australia) are handled automatically
+  by the browser's time zone data — nothing to update by hand.
+  Weekends are closed. Public holidays are not tracked.
+*/
+const SESSIONS = [
+  { name: 'Sydney',   session: 'ASX',  tz: 'Australia/Sydney', locale: 'en-AU', color: '#378ADD', open: [10, 0], close: [16, 0]  },
+  { name: 'Tokyo',    session: 'TSE',  tz: 'Asia/Tokyo',       locale: 'en-GB', abbr: 'JST', color: '#e07070', open: [9, 0],  close: [15, 30] },
+  { name: 'London',   session: 'LSE',  tz: 'Europe/London',    locale: 'en-GB', color: '#c8974a', open: [8, 0],  close: [16, 30] },
+  { name: 'New York', session: 'NYSE', tz: 'America/New_York', locale: 'en-US', color: '#4ade80', open: [9, 30], close: [16, 0]  },
+];
+const OVERLAPS = [
+  { name: 'Sydney / Tokyo',    a: 'Sydney', b: 'Tokyo' },
+  { name: 'London / New York', a: 'London', b: 'New York' },
+];
+const DAY = 86400000;
+
+// Local date/time parts of an instant in a time zone
+function parts(tz, t) {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hourCycle: 'h23',
+    year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+  const o = {};
+  f.formatToParts(new Date(t)).forEach(p => { if (p.type !== 'literal') o[p.type] = +p.value; });
+  return o;
+}
+// Zone offset (ms) at an instant
+function offset(tz, t) {
+  const p = parts(tz, t);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(t / 1000) * 1000;
+}
+// Local wall-clock time in a zone -> UTC instant
+function zonedToUtc(tz, y, m, d, hh, mm) {
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  let t = guess - offset(tz, guess);
+  const t2 = guess - offset(tz, t);
+  return t2 !== t ? t2 : t;
+}
+
+// Trading windows (UTC ms) for a session, from yesterday to a week ahead, weekdays only
+function windows(s, now) {
+  const p = parts(s.tz, now);
+  const out = [];
+  for (let k = -1; k <= 7; k++) {
+    const day = new Date(Date.UTC(p.year, p.month - 1, p.day + k));
+    const wd = day.getUTCDay();
+    if (wd === 0 || wd === 6) continue;
+    const y = day.getUTCFullYear(), m = day.getUTCMonth() + 1, d = day.getUTCDate();
+    out.push({ start: zonedToUtc(s.tz, y, m, d, s.open[0], s.open[1]),
+               end:   zonedToUtc(s.tz, y, m, d, s.close[0], s.close[1]), k });
+  }
+  return out;
+}
+
+// Today's hours in UTC for a session (uses today's local date, even on weekends, for the label/map)
+function todayUtc(s, now) {
+  const p = parts(s.tz, now);
+  return { start: zonedToUtc(s.tz, p.year, p.month, p.day, s.open[0], s.open[1]),
+           end:   zonedToUtc(s.tz, p.year, p.month, p.day, s.close[0], s.close[1]) };
+}
+
+const pad = n => String(n).padStart(2, '0');
+const hm = t => { const d = new Date(t); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); };
+const hourOfDay = t => { const d = new Date(t); return d.getUTCHours() + d.getUTCMinutes() / 60; };
+function fmtCD(ms) {
+  const mins = Math.max(0, Math.round(ms / 60000));
+  const d = Math.floor(mins / 1440), h = Math.floor((mins % 1440) / 60), m = mins % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function zoneName(s, now) {
+  if (s.abbr) return s.abbr;
+  try {
+    return new Intl.DateTimeFormat(s.locale, { timeZone: s.tz, timeZoneName: 'short' })
+      .formatToParts(new Date(now)).find(p => p.type === 'timeZoneName').value;
+  } catch (e) { return ''; }
+}
+function localClock(s, now) {
+  const p = parts(s.tz, now);
+  return `${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
+}
+
+function bars(startH, endH, color) {
+  if (endH > startH) {
+    return `<div class="tl-bar" style="left:${(startH / 24 * 100).toFixed(2)}%;width:${((endH - startH) / 24 * 100).toFixed(2)}%;background:${color}"></div>`;
+  }
+  return `<div class="tl-bar" style="left:${(startH / 24 * 100).toFixed(2)}%;width:${((24 - startH) / 24 * 100).toFixed(2)}%;background:${color}"></div>
+          <div class="tl-bar" style="left:0;width:${(endH / 24 * 100).toFixed(2)}%;background:${color}"></div>`;
+}
+
+function update() {
+  const now = Date.now();
+
+  document.getElementById('utc-now').textContent = new Date(now).toISOString().slice(11, 19);
+  document.getElementById('dst-text').textContent =
+    'Local clocks: ' + SESSIONS.map(s => `${s.name} ${zoneName(s, now)}`).join(' · ');
+
+  const win = {};
+  SESSIONS.forEach(s => { win[s.name] = windows(s, now); });
+
+  // Cards
+  document.getElementById('clocks').innerHTML = SESSIONS.map(s => {
+    const w = win[s.name];
+    const cur = w.find(x => now >= x.start && now < x.end);
+    const next = w.find(x => x.start > now);
+    const today = todayUtc(s, now);
+    let pill, sub;
+    if (cur) {
+      pill = `<span class="sp sp-open">● Open</span>`;
+      sub = `<div class="cc-sub">Closes in ${fmtCD(cur.end - now)}</div>`;
+    } else {
+      const untilMs = next ? next.start - now : 0;
+      pill = untilMs <= 30 * 60000 ? `<span class="sp sp-soon">Soon</span>` : `<span class="sp sp-closed">Closed</span>`;
+      sub = `<div class="cc-sub">Opens in ${fmtCD(untilMs)}</div>`;
+    }
+    return `<div class="card ${cur ? 'open' : 'closed'}">
+      <div class="cc-city">${s.name}</div>
+      <div class="cc-session">${s.session} · local ${zoneName(s, now)}</div>
+      <div class="cc-time">${localClock(s, now)}</div>
+      <div class="cc-hours">${hm(today.start)} – ${hm(today.end)} UTC</div>
+      ${pill}${sub}
+    </div>`;
+  }).join('');
+
+  // Timeline (UTC 00–24)
+  const nowPct = hourOfDay(now) / 24 * 100;
+  document.getElementById('tl-rows').innerHTML = SESSIONS.map(s => {
+    const t = todayUtc(s, now);
+    return `<div class="tl-row">
+      <div class="tl-name">${s.name}</div>
+      <div class="tl-wrap" role="img" aria-label="${s.name} session ${hm(t.start)} to ${hm(t.end)} UTC">
+        ${bars(hourOfDay(t.start), hourOfDay(t.end), s.color)}
+        <div class="tl-now" style="left:${nowPct.toFixed(2)}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Overlaps: current one, otherwise the next one coming up
+  document.getElementById('ov-chips').innerHTML = OVERLAPS.map(o => {
+    const list = [];
+    win[o.a].forEach(x => win[o.b].forEach(y => {
+      const st = Math.max(x.start, y.start), en = Math.min(x.end, y.end);
+      if (en > st) list.push({ st, en });
+    }));
+    list.sort((p, q) => p.st - q.st);
+    const cur = list.find(v => now >= v.st && now < v.en);
+    const pick = cur || list.find(v => v.st > now);
+    if (!pick) return `<span class="ov-chip">${o.name} · none</span>`;
+    return `<span class="ov-chip ${cur ? 'active' : ''}">${cur ? '● ' : ''}${o.name} · ${hm(pick.st)} – ${hm(pick.en)} UTC</span>`;
+  }).join('');
+}
+
+update();
+setInterval(update, 1000);
+</script>
